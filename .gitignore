@@ -6,6 +6,7 @@
 !/quickjs-src/
 !/quickjs-src/**
 
+!/.editorconfig
 !/README.md
 !/LICENSE.txt
 
