@@ -1,4 +1,4 @@
-#/usr/bin/env bash
+#!/usr/bin/env bash
 
 readonly proj_dir="$(dirname "$0")/.."
 readonly build_dir="$proj_dir/build-emscripten"
