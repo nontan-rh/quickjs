@@ -828,7 +828,11 @@ static JSValue js_std_popen(JSContext *ctx, JSValueConst this_val,
         goto fail;
     }
 
+#if EMSCRIPTEN
+    f = NULL;
+#else
     f = popen(filename, mode);
+#endif
     if (!f)
         err = errno;
     else
@@ -1272,7 +1276,11 @@ static JSValue js_std_urlGet(JSContext *ctx, JSValueConst this_val,
         return JS_EXCEPTION;
     }
     //    printf("%s\n", (char *)cmd_buf.buf);
+#if EMSCRIPTEN
+    f = NULL;
+#else
     f = popen((char *)cmd_buf.buf, "r");
+#endif
     dbuf_free(&cmd_buf);
     if (!f) {
         return JS_ThrowTypeError(ctx, "could not start curl");

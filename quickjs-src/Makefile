@@ -138,7 +138,7 @@ QJSC_CC=$(CC)
 QJSC=./qjsc$(EXE)
 endif
 ifndef CONFIG_WIN32
-PROGS+=qjscalc
+# PROGS+=qjscalc
 endif
 ifdef CONFIG_M32
 PROGS+=qjs32 qjs32_s
