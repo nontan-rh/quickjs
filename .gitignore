@@ -6,8 +6,15 @@
 !/quickjs-src/
 !/quickjs-src/**
 
+!/.github/
+!/.github/workflows
+!/.github/workflows/*.yml
+
 !/scripts/
 !/scripts/*.sh
+
+!/docker/
+!/docker/*.dockerfile
 
 !/.editorconfig
 

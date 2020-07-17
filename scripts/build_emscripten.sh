@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euxo pipefail
+
 readonly proj_dir="$(dirname "$0")/.."
 readonly build_dir="$proj_dir/build-emscripten"
 

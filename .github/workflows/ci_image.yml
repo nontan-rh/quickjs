@@ -1,0 +1,30 @@
+name: Build CI Image
+
+on:
+  push:
+    tags:
+      - ci_image_*
+    paths:
+      - '**/Dockerfile'
+      - '**.dockerfile'
+
+jobs:
+  Build:
+    if: github.actor == 'nontan-rh'
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        run: |-
+          set -euxo pipefail
+          tag=$(git tag --points-at HEAD | perl -ne 'if ($_ =~ /^ci_image_(\d{4}_\d{2}_\d{2}_[1-9][0-9]*)$/) { print "$1"; exit; }')
+          if [ "$tag" = "" ]; then
+            scripts/build_ci_images.sh "" false
+          else
+            printenv GITHUB_TOKEN | docker login --username "$GITHUB_USERNAME" --password-stdin
+            scripts/build_ci_images.sh $tag true
+          fi
+        shell: bash
+        env:
+          GITHUB_USERNAME: nontan-rh
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
