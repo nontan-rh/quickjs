@@ -1,12 +1,6 @@
 name: Build CI Image
 
-on:
-  push:
-    tags:
-      - ci_image_*
-    paths:
-      - '**/Dockerfile'
-      - '**.dockerfile'
+on: push
 
 jobs:
   Build:
