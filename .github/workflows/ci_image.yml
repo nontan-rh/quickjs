@@ -1,6 +1,11 @@
 name: Build CI Image
 
-on: push
+on:
+  push:
+    paths:
+      - .github/workflows/ci_image.yml
+      - scripts/build_ci_images.sh
+      - docker/*.dockerfile
 
 jobs:
   Build:
