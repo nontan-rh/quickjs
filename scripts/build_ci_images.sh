@@ -7,8 +7,14 @@ readonly do_push=$2
 
 cd "$(dirname "$0")/../docker"
 
+if [ "$tag" = "" ]; then
+    readonly suffix=""
+else
+    readonly suffix=":$tag"
+fi
+
 readonly registry='docker.pkg.github.com/nontan-rh/quickjs'
-readonly base_name_tag="$registry/quickjs-ci-base:$tag"
+readonly base_name_tag="$registry/quickjs-ci-base$suffix"
 
 docker build . \
     --file "quickjs-ci-base.dockerfile" \
@@ -23,9 +29,9 @@ build_variation() {
     docker build . \
         --file "$name.dockerfile" \
         --build-arg "base=$base_name_tag" \
-        --tag "$registry/$name:$tag"
+        --tag "$registry/$name$suffix"
     if [ "$do_push" = "true" ]; then
-        docker push "$registry/$name:$tag"
+        docker push "$registry/$name$suffix"
     fi
 }
 
