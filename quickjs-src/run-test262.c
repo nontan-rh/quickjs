@@ -363,7 +363,7 @@ static int add_test_file(const char *filename, const struct stat *ptr, int flag)
 /* find js files from the directory tree and sort the list */
 static void enumerate_tests(const char *path)
 {
-#if EMSCRIPTEN
+#ifdef EMSCRIPTEN
     (void)path;
 #else
     namelist_t *lp = &test_list;
