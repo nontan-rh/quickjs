@@ -8,4 +8,4 @@ readonly cc="gcc"
 
 rm -fr "$build_dir"
 cp -r "$proj_dir/quickjs-src" "$build_dir"
-make -C "$build_dir" QJSC_CC="$cc" CC="$cc"
+make -C "$build_dir" QJSC_CC="$cc" CC="$cc" STRIP=true "$@"

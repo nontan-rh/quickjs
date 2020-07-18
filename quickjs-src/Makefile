@@ -41,7 +41,10 @@ CONFIG_DEFAULT_AR=y
 endif
 
 # installation directory
-prefix=/usr/local
+# prefix=/usr/local
+ifeq ($(DESTDIR),)
+	DESTDIR=/usr/local
+endif
 
 # use the gprof profiler
 #CONFIG_PROFILE=y
@@ -128,9 +131,9 @@ else
 LDEXPORT=-rdynamic
 endif
 
-HOST_CFLAGS=$(CFLAGS)
-HOST_CFLAGS_OPT=$(CFLAGS_OPT)
-HOST_LDFLAGS=$(LDFLAGS)
+HOST_CFLAGS:=$(CFLAGS)
+HOST_CFLAGS_OPT:=$(CFLAGS_OPT)
+HOST_LDFLAGS:=$(LDFLAGS)
 
 CFLAGS+=$(ADDITIONAL_CFLAGS)
 LDFLAGS+=$(ADDITIONAL_LDFLAGS)
@@ -300,8 +303,8 @@ clean:
 install: all
 	mkdir -p "$(DESTDIR)$(prefix)/bin"
 	$(STRIP) qjs qjsc
-	install -m755 qjs qjsc "$(DESTDIR)$(prefix)/bin"
-	ln -sf qjs "$(DESTDIR)$(prefix)/bin/qjscalc"
+	# install -m755 qjs qjsc "$(DESTDIR)$(prefix)/bin"
+	# ln -sf qjs "$(DESTDIR)$(prefix)/bin/qjscalc"
 	mkdir -p "$(DESTDIR)$(prefix)/lib/quickjs"
 	install -m644 libquickjs.a "$(DESTDIR)$(prefix)/lib/quickjs"
 ifdef CONFIG_LTO
