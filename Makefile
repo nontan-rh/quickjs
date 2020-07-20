@@ -17,8 +17,8 @@ emscripten: $(EMSCRIPTEN_BUILD_DIR)
 
 emscripten-install: emscripten
 	$(MAKE) -C $(EMSCRIPTEN_BUILD_DIR) $(EMSCRIPTEN_BUILD_OPTIONS) install
-	mkdir -p "$(DESTDIR)/lib/quickjs/cmake"
-	install -m644 cmake/quickjs-targets.cmake "$(DESTDIR)/lib/quickjs/cmake/quickjs-targets.cmake"
+	mkdir -p "$(DESTDIR)/lib/cmake/quickjs"
+	install -m644 cmake/quickjs-targets.cmake "$(DESTDIR)/lib/cmake/quickjs/quickjs-targets.cmake"
 
 $(LINUX_BUILD_DIR): quickjs-src
 	rm -fr "$(LINUX_BUILD_DIR)"
