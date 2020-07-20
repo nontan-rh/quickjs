@@ -13,6 +13,9 @@
 !/scripts/
 !/scripts/*.sh
 
+!/cmake/
+!/cmake/*.cmake
+
 !/docker/
 !/docker/*.dockerfile
 
@@ -20,6 +23,8 @@
 
 !/README.md
 !/LICENSE.txt
+
+!/Makefile
 
 # https://github.com/github/gitignore/blob/master/Global/macOS.gitignore
 
