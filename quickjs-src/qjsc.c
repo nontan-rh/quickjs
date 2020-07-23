@@ -60,6 +60,7 @@ static uint64_t feature_bitmap;
 static FILE *outfile;
 static BOOL byte_swap;
 static BOOL dynamic_export;
+static BOOL use_relative_path;
 static const char *c_ident_prefix = "qjsc_";
 
 #define FE_ALL (-1)
@@ -80,6 +81,13 @@ static const FeatureEntry feature_list[] = {
     { "bigint", "BigInt" },
 #endif
 };
+
+static BOOL starts_with(const char *pre, const char *str)
+{
+    size_t lenpre = strlen(pre);
+    size_t lenstr = strlen(str);
+    return lenstr < lenpre ? FALSE : memcmp(pre, str, lenpre) == 0;
+}
 
 void namelist_add(namelist_t *lp, const char *name, const char *short_name,
                   int flags)
@@ -125,6 +133,24 @@ namelist_entry_t *namelist_find(namelist_t *lp, const char *name)
     return NULL;
 }
 
+namelist_entry_t *namelist_find_prefixed(namelist_t *lp, const char *name)
+{
+    char entry_name_slash[1024];
+
+    int i;
+    for(i = 0; i < lp->count; i++) {
+        namelist_entry_t *e = &lp->array[i];
+
+        entry_name_slash[0] = 0;
+        strncat(entry_name_slash, e->name, sizeof(entry_name_slash) - 1);
+        strncat(entry_name_slash, "/", sizeof(entry_name_slash) - 1);
+
+        if (!strcmp(e->name, name) || starts_with(entry_name_slash, name))
+            return e;
+    }
+    return NULL;
+}
+
 static void get_c_name(char *buf, size_t buf_size, const char *file)
 {
     const char *p, *r;
@@ -132,11 +158,16 @@ static void get_c_name(char *buf, size_t buf_size, const char *file)
     int c;
     char *q;
     
-    p = strrchr(file, '/');
-    if (!p)
+    if (use_relative_path) {
         p = file;
-    else
-        p++;
+    } else {
+        p = strrchr(file, '/');
+        if (!p)
+            p = file;
+        else
+            p++;
+    }
+
     r = strrchr(p, '.');
     if (!r)
         len = strlen(p);
@@ -235,8 +266,9 @@ JSModuleDef *jsc_module_loader(JSContext *ctx,
     namelist_entry_t *e;
 
     /* check if it is a declared C or system module */
-    e = namelist_find(&cmodule_list, module_name);
+    e = namelist_find_prefixed(&cmodule_list, module_name);
     if (e) {
+        fprintf(stderr, "Warning: source module '%s' will be loaded as an external module\n", module_name);
         /* add in the static init module list */
         namelist_add(&init_module_list, e->name, e->short_name, 0);
         /* create a dummy module */
@@ -366,7 +398,8 @@ void help(void)
            "-M module_name[,cname] add initialization code for an external C module\n"
            "-x          byte swapped output\n"
            "-p prefix   set the prefix of the generated C names\n"
-           "-S n        set the maximum stack size to 'n' bytes (default=%d)\n",
+           "-S n        set the maximum stack size to 'n' bytes (default=%d)\n"
+           "-r          generate cname based on relative path\n",
            JS_DEFAULT_STACK_SIZE);
 #ifdef CONFIG_LTO
     {
@@ -519,13 +552,14 @@ int main(int argc, char **argv)
     verbose = 0;
     use_lto = FALSE;
     stack_size = 0;
+    use_relative_path = FALSE;
     
     /* add system modules */
     namelist_add(&cmodule_list, "std", "std", 0);
     namelist_add(&cmodule_list, "os", "os", 0);
 
     for(;;) {
-        c = getopt(argc, argv, "ho:cdN:f:mxevM:p:S:");
+        c = getopt(argc, argv, "ho:cdN:f:mxevM:p:S:dr");
         if (c == -1)
             break;
         switch(c) {
@@ -536,9 +570,6 @@ int main(int argc, char **argv)
             break;
         case 'c':
             output_type = OUTPUT_C;
-            break;
-        case 'd':
-            output_type = OUTPUT_C_MODULE_LOAD_FUNCTION;
             break;
         case 'e':
             output_type = OUTPUT_C_MAIN;
@@ -605,6 +636,12 @@ int main(int argc, char **argv)
             break;
         case 'S':
             stack_size = (size_t)strtod(optarg, NULL);
+            break;
+        case 'd':
+            output_type = OUTPUT_C_MODULE_LOAD_FUNCTION;
+            break;
+        case 'r':
+            use_relative_path = TRUE;
             break;
         default:
             break;
