@@ -28,7 +28,7 @@ endif
 # Windows cross compilation from Linux
 #CONFIG_WIN32=y
 # use link time optimization (smaller and faster executables but slower build)
-#CONFIG_LTO=y
+CONFIG_LTO=y
 # consider warnings as errors (for development)
 #CONFIG_WERROR=y
 # force 32 bit build for some utilities
@@ -41,28 +41,23 @@ CONFIG_DEFAULT_AR=y
 endif
 
 # installation directory
-# prefix=/usr/local
-ifeq ($(DESTDIR),)
-	DESTDIR=/usr/local
-endif
+prefix=/usr/local
 
 # use the gprof profiler
 #CONFIG_PROFILE=y
 # use address sanitizer
 #CONFIG_ASAN=y
 # include the code for BigInt/BigFloat/BigDecimal and math mode
-#CONFIG_BIGNUM=y
+CONFIG_BIGNUM=y
 
 OBJDIR=.obj
 
 ifdef CONFIG_WIN32
   CROSS_PREFIX=i686-w64-mingw32-
   EXE=.exe
-  HOST_EXE=.exe
 else
   CROSS_PREFIX=
   EXE=
-  HOST_EXE=
 endif
 ifdef CONFIG_CLANG
   HOST_CC=clang
@@ -111,7 +106,7 @@ endif
 CFLAGS+=$(DEFINES)
 CFLAGS_DEBUG=$(CFLAGS) -O0
 CFLAGS_SMALL=$(CFLAGS) -Os
-CFLAGS_OPT=$(CFLAGS) -Os
+CFLAGS_OPT=$(CFLAGS) -O2
 CFLAGS_NOLTO:=$(CFLAGS_OPT)
 LDFLAGS=-g
 ifdef CONFIG_LTO
@@ -133,24 +128,17 @@ else
 LDEXPORT=-rdynamic
 endif
 
-HOST_CFLAGS:=$(CFLAGS)
-HOST_CFLAGS_OPT:=$(CFLAGS_OPT)
-HOST_LDFLAGS:=$(LDFLAGS)
-
-CFLAGS+=$(ADDITIONAL_CFLAGS)
-LDFLAGS+=$(ADDITIONAL_LDFLAGS)
-
-PROGS=qjs$(EXE)
+PROGS=qjs$(EXE) qjsc$(EXE) run-test262
 ifneq ($(CROSS_PREFIX),)
 QJSC_CC=gcc
-QJSC=./qjsc$(HOST_EXE)
+QJSC=./host-qjsc
 PROGS+=$(QJSC)
 else
 QJSC_CC=$(CC)
-QJSC=./qjsc$(HOST_EXE)
+QJSC=./qjsc$(EXE)
 endif
 ifndef CONFIG_WIN32
-# PROGS+=qjscalc
+PROGS+=qjscalc
 endif
 ifdef CONFIG_M32
 PROGS+=qjs32 qjs32_s
@@ -176,7 +164,7 @@ all: $(OBJDIR) $(OBJDIR)/quickjs.check.o $(OBJDIR)/qjs.check.o $(PROGS)
 
 QJS_LIB_OBJS=$(OBJDIR)/quickjs.o $(OBJDIR)/libregexp.o $(OBJDIR)/libunicode.o $(OBJDIR)/cutils.o $(OBJDIR)/quickjs-libc.o
 
-QJS_OBJS=$(OBJDIR)/qjs.o $(QJS_LIB_OBJS)
+QJS_OBJS=$(OBJDIR)/qjs.o $(OBJDIR)/repl.o $(QJS_LIB_OBJS)
 ifdef CONFIG_BIGNUM
 QJS_LIB_OBJS+=$(OBJDIR)/libbf.o 
 QJS_OBJS+=$(OBJDIR)/qjscalc.o
@@ -197,10 +185,14 @@ qjs$(EXE): $(QJS_OBJS)
 qjs-debug$(EXE): $(patsubst %.o, %.debug.o, $(QJS_OBJS))
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-qjsc$(HOST_EXE): $(OBJDIR)/qjsc.o $(QJS_LIB_OBJS)
-	$(HOST_CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+qjsc$(EXE): $(OBJDIR)/qjsc.o $(QJS_LIB_OBJS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 ifneq ($(CROSS_PREFIX),)
+
+$(QJSC): $(OBJDIR)/qjsc.host.o \
+    $(patsubst %.o, %.host.o, $(QJS_LIB_OBJS))
+	$(HOST_CC) $(LDFLAGS) -o $@ $^ $(HOST_LIBS)
 
 endif #CROSS_PREFIX
 
@@ -211,6 +203,7 @@ endif
 QJSC_HOST_DEFINES:=-DCONFIG_CC=\"$(HOST_CC)\" -DCONFIG_PREFIX=\"$(prefix)\"
 
 $(OBJDIR)/qjsc.o: CFLAGS+=$(QJSC_DEFINES)
+$(OBJDIR)/qjsc.host.o: CFLAGS+=$(QJSC_HOST_DEFINES)
 
 qjs32: $(patsubst %.o, %.m32.o, $(QJS_OBJS))
 	$(CC) -m32 $(LDFLAGS) $(LDEXPORT) -o $@ $^ $(LIBS)
@@ -265,7 +258,7 @@ $(OBJDIR)/%.o: %.c | $(OBJDIR)
 	$(CC) $(CFLAGS_OPT) -c -o $@ $<
 
 $(OBJDIR)/%.host.o: %.c | $(OBJDIR)
-	$(HOST_CC) $(HOST_CFLAGS_OPT) -c -o $@ $<
+	$(HOST_CC) $(CFLAGS_OPT) -c -o $@ $<
 
 $(OBJDIR)/%.pic.o: %.c | $(OBJDIR)
 	$(CC) $(CFLAGS_OPT) -fPIC -DJS_SHARED_LIBRARY -c -o $@ $<
@@ -292,7 +285,7 @@ jscompress: jscompress.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ jscompress.c
 
 unicode_gen: $(OBJDIR)/unicode_gen.host.o $(OBJDIR)/cutils.host.o libunicode.c unicode_gen_def.h
-	$(HOST_CC) $(HOST_LDFLAGS) $(HOST_CFLAGS) -o $@ $(OBJDIR)/unicode_gen.host.o $(OBJDIR)/cutils.host.o
+	$(HOST_CC) $(LDFLAGS) $(CFLAGS) -o $@ $(OBJDIR)/unicode_gen.host.o $(OBJDIR)/cutils.host.o
 
 clean:
 	rm -f repl.c qjscalc.c out.c
@@ -305,8 +298,8 @@ clean:
 install: all
 	mkdir -p "$(DESTDIR)$(prefix)/bin"
 	$(STRIP) qjs qjsc
-	install -m755 qjsc$(HOST_EXE) "$(DESTDIR)$(prefix)/bin"
-	# ln -sf qjs "$(DESTDIR)$(prefix)/bin/qjscalc"
+	install -m755 qjs qjsc "$(DESTDIR)$(prefix)/bin"
+	ln -sf qjs "$(DESTDIR)$(prefix)/bin/qjscalc"
 	mkdir -p "$(DESTDIR)$(prefix)/lib/quickjs"
 	install -m644 libquickjs.a "$(DESTDIR)$(prefix)/lib/quickjs"
 ifdef CONFIG_LTO
