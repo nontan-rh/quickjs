@@ -660,7 +660,7 @@ int main(int argc, char **argv)
             "\n"
             );
     
-    if (output_type != OUTPUT_C && output_type == OUTPUT_C_MODULE_LOAD_FUNCTION) {
+    if (output_type != OUTPUT_C && output_type != OUTPUT_C_MODULE_LOAD_FUNCTION) {
         fprintf(fo, "#include \"quickjs-libc.h\"\n"
                 "\n"
                 );
