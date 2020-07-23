@@ -106,4 +106,4 @@ install: all
 	mkdir -p "$(DESTDIR)/lib/quickjs"
 	install -m644 libquickjs.a "$(DESTDIR)/lib/quickjs"
 	mkdir -p "$(DESTDIR)/include/quickjs"
-	install -m644 quickjs.h quickjs-libc.h "$(DESTDIR)/include/quickjs"
+	install -m644 quickjs-src/quickjs.h quickjs-src/quickjs-libc.h "$(DESTDIR)/include/quickjs"
