@@ -135,61 +135,79 @@ static inline int ctz64(uint64_t a)
     return __builtin_ctzll(a);
 }
 
-struct __attribute__((packed)) packed_u64 {
-    uint64_t v;
-};
-
-struct __attribute__((packed)) packed_u32 {
-    uint32_t v;
-};
-
-struct __attribute__((packed)) packed_u16 {
-    uint16_t v;
-};
-
 static inline uint64_t get_u64(const uint8_t *tab)
 {
-    return ((const struct packed_u64 *)tab)->v;
+    uint64_t result = 0;
+    for (int i = 0; i < 8; i++) {
+        result |= (((uint64_t)tab[i]) << (i * 8));
+    }
+    return result;
 }
 
 static inline int64_t get_i64(const uint8_t *tab)
 {
-    return (int64_t)((const struct packed_u64 *)tab)->v;
+    uint64_t result = 0;
+    for (int i = 0; i < 8; i++) {
+        result |= (((uint64_t)tab[i]) << (i * 8));
+    }
+    return (int64_t)result;
 }
 
 static inline void put_u64(uint8_t *tab, uint64_t val)
 {
-    ((struct packed_u64 *)tab)->v = val;
+    for (int i = 0; i < 8; i++) {
+        tab[i] = (val >> (i * 8)) & 0xff;
+    }
 }
 
 static inline uint32_t get_u32(const uint8_t *tab)
 {
-    return ((const struct packed_u32 *)tab)->v;
+    uint32_t result = 0;
+    for (int i = 0; i < 4; i++) {
+        result |= (((uint32_t)tab[i]) << (i * 8));
+    }
+    return result;
 }
 
 static inline int32_t get_i32(const uint8_t *tab)
 {
-    return (int32_t)((const struct packed_u32 *)tab)->v;
+    uint32_t result = 0;
+    for (int i = 0; i < 4; i++) {
+        result |= (((uint32_t)tab[i]) << (i * 8));
+    }
+    return (int32_t)result;
 }
 
 static inline void put_u32(uint8_t *tab, uint32_t val)
 {
-    ((struct packed_u32 *)tab)->v = val;
+    for (int i = 0; i < 4; i++) {
+        tab[i] = (val >> (i * 8)) & 0xff;
+    }
 }
 
 static inline uint32_t get_u16(const uint8_t *tab)
 {
-    return ((const struct packed_u16 *)tab)->v;
+    uint16_t result = 0;
+    for (int i = 0; i < 2; i++) {
+        result |= (((uint16_t)tab[i]) << (i * 8));
+    }
+    return result;
 }
 
 static inline int32_t get_i16(const uint8_t *tab)
 {
-    return (int16_t)((const struct packed_u16 *)tab)->v;
+    uint16_t result = 0;
+    for (int i = 0; i < 2; i++) {
+        result |= (((uint16_t)tab[i]) << (i * 8));
+    }
+    return (int32_t)result;
 }
 
 static inline void put_u16(uint8_t *tab, uint16_t val)
 {
-    ((struct packed_u16 *)tab)->v = val;
+    for (int i = 0; i < 2; i++) {
+        tab[i] = (val >> (i * 8)) & 0xff;
+    }
 }
 
 static inline uint32_t get_u8(const uint8_t *tab)
