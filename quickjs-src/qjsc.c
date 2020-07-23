@@ -336,6 +336,19 @@ static const char main_c_template2[] =
     "  return 0;\n"
     "}\n";
 
+
+static const char load_function_template1[] =
+    "int js_init_module%s%s(JSContext *ctx, const char *module_name)\n"
+    "{\n"
+    "  (void)module_name;\n"
+    "\n"
+    ;
+
+static const char load_function_template2[] =
+    "  return 0;\n"
+    "}\n"
+    ;
+
 #define PROG_NAME "qjsc"
 
 void help(void)
@@ -345,6 +358,7 @@ void help(void)
            "\n"
            "options are:\n"
            "-c          only output bytecode in a C file\n"
+           "-d          output module initialization function and bytecode in a C file\n"
            "-e          output main() and bytecode in a C file (default = executable output)\n"
            "-o output   set the output filename\n"
            "-N cname    set the C name of the generated data\n"
@@ -477,6 +491,7 @@ typedef enum {
     OUTPUT_C,
     OUTPUT_C_MAIN,
     OUTPUT_EXECUTABLE,
+    OUTPUT_C_MODULE_LOAD_FUNCTION,
 } OutputTypeEnum;
 
 int main(int argc, char **argv)
@@ -510,7 +525,7 @@ int main(int argc, char **argv)
     namelist_add(&cmodule_list, "os", "os", 0);
 
     for(;;) {
-        c = getopt(argc, argv, "ho:cN:f:mxevM:p:S:");
+        c = getopt(argc, argv, "ho:cdN:f:mxevM:p:S:");
         if (c == -1)
             break;
         switch(c) {
@@ -521,6 +536,9 @@ int main(int argc, char **argv)
             break;
         case 'c':
             output_type = OUTPUT_C;
+            break;
+        case 'd':
+            output_type = OUTPUT_C_MODULE_LOAD_FUNCTION;
             break;
         case 'e':
             output_type = OUTPUT_C_MAIN;
@@ -593,6 +611,8 @@ int main(int argc, char **argv)
         }
     }
 
+    const char *cname_config = cname;
+
     if (optind >= argc)
         help();
 
@@ -640,8 +660,12 @@ int main(int argc, char **argv)
             "\n"
             );
     
-    if (output_type != OUTPUT_C) {
+    if (output_type != OUTPUT_C && output_type == OUTPUT_C_MODULE_LOAD_FUNCTION) {
         fprintf(fo, "#include \"quickjs-libc.h\"\n"
+                "\n"
+                );
+    } else if (output_type == OUTPUT_C_MODULE_LOAD_FUNCTION) {
+        fprintf(fo, "#include <quickjs/quickjs-libc.h>\n"
                 "\n"
                 );
     } else {
@@ -656,7 +680,7 @@ int main(int argc, char **argv)
         cname = NULL;
     }
 
-    if (output_type != OUTPUT_C) {
+    if (output_type != OUTPUT_C && output_type != OUTPUT_C_MODULE_LOAD_FUNCTION) {
         fputs(main_c_template1, fo);
         fprintf(fo, "  ctx = JS_NewContextRaw(rt);\n");
 
@@ -710,6 +734,17 @@ int main(int argc, char **argv)
                     e->flags ? "1" : "0");
         }
         fputs(main_c_template2, fo);
+    } else if (output_type == OUTPUT_C_MODULE_LOAD_FUNCTION) {
+
+        fprintf(fo, load_function_template1, (cname_config == NULL || strlen(cname_config) == 0) ? "" : "_", (cname_config == NULL) ? "" : cname_config);
+        for(i = 0; i < cname_list.count; i++) {
+            namelist_entry_t *e = &cname_list.array[i];
+            fprintf(fo, "  js_std_eval_binary(ctx, %s, %s_size, %s);\n",
+                    e->name, e->name,
+                    e->flags ? "1" : "0");
+        }
+        fputs(load_function_template2, fo);
+        
     }
     
     JS_FreeContext(ctx);
