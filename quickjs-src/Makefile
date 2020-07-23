@@ -58,9 +58,11 @@ OBJDIR=.obj
 ifdef CONFIG_WIN32
   CROSS_PREFIX=i686-w64-mingw32-
   EXE=.exe
+  HOST_EXE=.exe
 else
   CROSS_PREFIX=
   EXE=
+  HOST_EXE=
 endif
 ifdef CONFIG_CLANG
   HOST_CC=clang
@@ -141,11 +143,11 @@ LDFLAGS+=$(ADDITIONAL_LDFLAGS)
 PROGS=qjs$(EXE)
 ifneq ($(CROSS_PREFIX),)
 QJSC_CC=gcc
-QJSC=./host-qjsc
-# PROGS+=$(QJSC)
+QJSC=./qjsc$(HOST_EXE)
+PROGS+=$(QJSC)
 else
 QJSC_CC=$(CC)
-QJSC=./qjsc$(EXE)
+QJSC=./qjsc$(HOST_EXE)
 endif
 ifndef CONFIG_WIN32
 # PROGS+=qjscalc
@@ -195,8 +197,8 @@ qjs$(EXE): $(QJS_OBJS)
 qjs-debug$(EXE): $(patsubst %.o, %.debug.o, $(QJS_OBJS))
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-qjsc$(EXE): $(OBJDIR)/qjsc.o $(QJS_LIB_OBJS)
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+qjsc$(HOST_EXE): $(OBJDIR)/qjsc.o $(QJS_LIB_OBJS)
+	$(HOST_CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 ifneq ($(CROSS_PREFIX),)
 
@@ -303,7 +305,7 @@ clean:
 install: all
 	mkdir -p "$(DESTDIR)$(prefix)/bin"
 	$(STRIP) qjs qjsc
-	# install -m755 qjs qjsc "$(DESTDIR)$(prefix)/bin"
+	install -m755 qjsc$(HOST_EXE) "$(DESTDIR)$(prefix)/bin"
 	# ln -sf qjs "$(DESTDIR)$(prefix)/bin/qjscalc"
 	mkdir -p "$(DESTDIR)$(prefix)/lib/quickjs"
 	install -m644 libquickjs.a "$(DESTDIR)$(prefix)/lib/quickjs"
